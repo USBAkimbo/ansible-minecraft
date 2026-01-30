@@ -1,0 +1,42 @@
+name: "Ansible - Minecraft"
+
+on:
+  workflow_dispatch:
+  push:
+    branches: main
+    paths:
+      - ansible/**
+      - .github/workflows/ansible-minecraft.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  ansible:
+    name: "Ansible Run"
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Run playbook
+        run: |
+          cd ansible
+          echo ${{ secrets.ANSIBLE_VAULT_KEY }} >> vault-pass
+          chmod 600 vault-pass
+          export ANSIBLE_FORCE_COLOR=1
+          export ANSIBLE_HOST_KEY_CHECKING=False
+          ansible-playbook -i hosts --vault-password-file vault-pass playbooks/ansible-minecraft.yml
+
+      - name: Cleanup
+        if: always()
+        run: |
+          rm -f ansible/vault-pass
