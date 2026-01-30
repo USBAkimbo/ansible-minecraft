@@ -4,9 +4,6 @@ ansible-vault-key
 # Terraform creds
 *.tfvars
 
-# VS Code
-.vscode
-
 # Ansible
 .ansible
 
