@@ -1,8 +1,13 @@
 - name: Fix iptables so it works on OCI
-  command: iptables -I INPUT -j ACCEPT
+  ansible.builtin.iptables:
+    chain: INPUT
+    action: insert
+    rule_num: 1
+    jump: ACCEPT
 
 - name: Flush iptables
-  command: iptables -F
+  ansible.builtin.iptables:
+    flush: yes
 
 - name: Save iptables rules
-  shell: iptables-save > /etc/iptables/rules.v4
+  ansible.builtin.shell: iptables-save > /etc/iptables/rules.v4
