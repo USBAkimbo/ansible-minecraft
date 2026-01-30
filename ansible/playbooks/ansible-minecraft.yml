@@ -5,13 +5,13 @@
 # Create a file containg just the $ANSIBLE_VAULT... part then run this
 # ansible-vault decrypt decryptthisfile.yml
 
-- hosts: all
+- hosts: minecraft
   roles:
-    - enable-auto-update
-    - install-zabbix-agent2
-    - install-minecraft-server-backups
-    - install-atm9-server
-    - fix-iptables
+    - roles/enable-auto-update
+    - roles/install-zabbix-agent2
+    - roles/install-minecraft-server-backups
+    - roles/install-atm9-server
+    - roles/fix-iptables
   vars:
     mcrcon_password: !vault |
           $ANSIBLE_VAULT;1.1;AES256
