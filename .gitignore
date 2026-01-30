@@ -4,6 +4,12 @@ ansible-vault-key
 # Terraform creds
 *.tfvars
 
+# VS Code
+.vscode
+
+# Ansible
+.ansible
+
 # Terraform backend because the URL has a secret in it and vars are not allowed
 backend.tf
 
