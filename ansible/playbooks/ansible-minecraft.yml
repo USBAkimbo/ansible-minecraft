@@ -8,7 +8,6 @@
 - hosts: minecraft
   roles:
     - roles/enable-auto-update
-    - roles/install-zabbix-agent2
     - roles/install-minecraft-server-backups
     - roles/install-atm9-server
     - roles/fix-iptables
