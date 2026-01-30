@@ -1,13 +1,8 @@
 - name: Install unattended-upgrades
   apt:
     name: unattended-upgrades
-    state: present
-    update_cache: true
-
-- name: Delete old config
-  file:
-    path: /etc/apt/apt.conf.d/50unattended-upgrades
-    state: absent
+    state: latest
+    cache_valid_time: 3600
 
 - name: Configure auto patching
   copy:
