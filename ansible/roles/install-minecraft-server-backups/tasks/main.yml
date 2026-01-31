@@ -1,53 +1,46 @@
 - name: Create Minecraft user
-  user:
+  ansible.builtin.user:
     name: minecraft
     shell: /bin/bash
     home: /opt/minecraft
 
 - name: Create Minecraft root directory
-  file:
+  ansible.builtin.file:
     path: /opt/minecraft
     state: directory
     recurse: yes
     owner: minecraft
     group: minecraft
-    mode: 0770
+    mode: '0770'
 
-- name: Add Kopia repo key
-  ansible.builtin.apt_key:
+- name: Download Kopia GPG key
+  ansible.builtin.get_url:
     url: https://kopia.io/signing-key
+    dest: /usr/share/keyrings/kopia-keyring.asc
+    mode: '0644'
 
 - name: Add Kopia repo
   ansible.builtin.apt_repository:
-    repo: "deb http://packages.kopia.io/apt/ stable main"
+    repo: "deb [signed-by=/usr/share/keyrings/kopia-keyring.asc] http://packages.kopia.io/apt/ stable main"
+    state: present
 
-- name: Install Kopia
+- name: Install Kopia and Cron
   ansible.builtin.apt:
-    name: kopia
+    name: 
+      - kopia
+      - cron
     state: latest
 
 - name: Connect to Kopia repository
-  ansible.builtin.shell: kopia repository connect b2 -p={{ kopia_password }} --bucket={{ kopia_b2_bucket_name }} --key-id={{ kopia_b2_bucket_key_id }} --key={{ kopia_b2_bucket_key }}
+  ansible.builtin.command: kopia repository connect b2 -p={{ kopia_password }} --bucket={{ kopia_b2_bucket_name }} --key-id={{ kopia_b2_bucket_key_id }} --key={{ kopia_b2_bucket_key }}
 
 - name: Configure Kopia snapshot retention policy
-  ansible.builtin.shell: |
-    kopia policy set --global --compression=zstd
-    kopia policy set --global --keep-hourly 24
-    kopia policy set --global --keep-daily 7
-    kopia policy set --global --keep-weekly 4
-    kopia policy set --global --keep-monthly 12
-    kopia policy set --global --keep-annual 3
-    kopia policy set --global --keep-latest 0
-  when: not kopia_configured.stat.exists
+  ansible.builtin.command: kopia policy set --global --compression=zstd --keep-hourly=24 --keep-daily=7 --keep-weekly=4 --keep-monthly=12 --keep-annual=3 --keep-latest=0
 
-
-- name: Install cron
-  apt:
-    name: cron
-    state: latest
-
-- name: Create hourly cron backup job
-  cron:
-    name: Minecraft server backup every hour
-    job: /opt/minecraft/backups/scripts/backup-server.sh
-    minute: "0"
+- name: Create backup job every 10 minutes
+  ansible.builtin.cron:
+    cron_file: minecraft-backup
+    name: minecraft-backup
+    job: "kopia snapshot create /opt/minecraft"
+    minute: "*/10"
+    user: root

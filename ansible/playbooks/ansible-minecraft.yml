@@ -9,8 +9,8 @@
   become: yes
   roles:
     - roles/enable-auto-update
-    - roles/install-minecraft-server-backups
     - roles/fix-iptables
+    - roles/install-minecraft-server-backups
   vars:
     mcrcon_password: !vault |
           $ANSIBLE_VAULT;1.1;AES256
