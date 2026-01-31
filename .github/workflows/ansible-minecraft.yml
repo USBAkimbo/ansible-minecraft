@@ -29,8 +29,8 @@ jobs:
 
       - name: Run playbook
         run: |
-          echo ${{ secrets.ANSIBLE_VAULT_KEY }} >> /opt/vault-pass
-          echo ${{ secrets.SSH_KEY }} | base64 -d >> /opt/ssh-key
+          echo ${{ secrets.ANSIBLE_VAULT_KEY }} > /opt/vault-pass
+          echo ${{ secrets.SSH_KEY }} | base64 -d > /opt/ssh-key
           chmod 600 /opt/vault-pass /opt/ssh-key
 
           cd ansible
