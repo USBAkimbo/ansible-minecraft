@@ -10,7 +10,6 @@
   roles:
     - roles/enable-auto-update
     - roles/install-minecraft-server-backups
-    - roles/install-atm9-server
     - roles/fix-iptables
   vars:
     mcrcon_password: !vault |

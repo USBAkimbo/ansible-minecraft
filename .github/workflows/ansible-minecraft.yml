@@ -29,14 +29,16 @@ jobs:
 
       - name: Run playbook
         run: |
+          echo ${{ secrets.ANSIBLE_VAULT_KEY }} >> /opt/vault-pass
+          echo ${{ secrets.SSH_KEY }} >> /opt/ssh-key
+          chmod 600 /opt/vault-pass /opt/ssh-key
+
           cd ansible
-          echo ${{ secrets.ANSIBLE_VAULT_KEY }} >> vault-pass
-          chmod 600 vault-pass
           export ANSIBLE_FORCE_COLOR=1
           export ANSIBLE_HOST_KEY_CHECKING=False
-          ansible-playbook -i hosts --vault-password-file vault-pass playbooks/ansible-minecraft.yml
+          ansible-playbook -i hosts.yml --vault-password-file /opt/vault-pass playbooks/ansible-minecraft.yml
 
       - name: Cleanup
         if: always()
         run: |
-          rm -f ansible/vault-pass
+          rm -f /opt/vault-pass /opt/ssh-key
