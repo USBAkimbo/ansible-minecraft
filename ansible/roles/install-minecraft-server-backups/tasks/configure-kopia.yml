@@ -11,17 +11,12 @@
     name: kopia
     state: latest
 
-- name: Check if Kopia is already configured
-  ansible.builtin.stat:
-    path: /opt/minecraft/backups/kopia/kopia.repository.f
-  register: kopia_configured
-
 - name: Connect to Kopia repository
   ansible.builtin.shell: kopia repository connect b2 -p={{ kopia_password }} --bucket={{ kopia_b2_bucket_name }} --key-id={{ kopia_b2_bucket_key_id }} --key={{ kopia_b2_bucket_key }}
-  when: not kopia_configured.stat.exists
 
 - name: Configure Kopia snapshot retention policy
   ansible.builtin.shell: |
+    kopia policy set --global --compression=zstd
     kopia policy set --global --keep-hourly 24
     kopia policy set --global --keep-daily 7
     kopia policy set --global --keep-weekly 4
