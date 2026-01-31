@@ -3,7 +3,7 @@ name: "Ansible - Minecraft"
 on:
   workflow_dispatch:
   push:
-    branches: main
+    branches: master
     paths:
       - ansible/**
       - .github/workflows/ansible-minecraft.yml
