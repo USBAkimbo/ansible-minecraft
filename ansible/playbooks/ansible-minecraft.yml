@@ -11,7 +11,7 @@
     - roles/enable-auto-update
     - roles/fix-iptables
     - roles/install-minecraft-server-backups
-    #- roles/atm10-config
+    - roles/atm10-config
   vars:
     mcrcon_password: !vault |
           $ANSIBLE_VAULT;1.1;AES256
