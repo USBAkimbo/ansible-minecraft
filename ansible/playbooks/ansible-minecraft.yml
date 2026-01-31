@@ -6,6 +6,7 @@
 # ansible-vault decrypt decryptthisfile.yml
 
 - hosts: minecraft
+  become: yes
   roles:
     - roles/enable-auto-update
     - roles/install-minecraft-server-backups
