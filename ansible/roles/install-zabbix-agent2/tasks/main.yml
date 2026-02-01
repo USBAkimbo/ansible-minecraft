@@ -1,9 +1,8 @@
 - name: Ensure gpg is installed
-  apt:
+  ansible.builtin.apt:
     name: gpg
-    state: latest
+    state: present
 
-# https://www.jeffgeerling.com/blog/2022/aptkey-deprecated-debianubuntu-how-fix-ansible
 - name: Add Zabbix apt repo key
   ansible.builtin.get_url:
     url: https://repo.zabbix.com/zabbix-official-repo.key
@@ -14,28 +13,41 @@
   ansible.builtin.apt_repository:
     repo: "deb https://repo.zabbix.com/zabbix/{{ zabbix_version }}/{{ ansible_distribution|lower }} {{ ansible_distribution_release }} main"
     state: present
-
-- name: apt update
-  apt:
     update_cache: yes
 
 - name: Install Zabbix Agent 2
-  apt:
+  ansible.builtin.apt:
     name: zabbix-agent2
-    state: latest
-  notify: Restart and enable Zabbix Agent 2 service
+    state: present
+
+- name: Copy Zabbix PSK file
+  ansible.builtin.copy:
+    src: zabbix-agent-psk
+    dest: /etc/zabbix/zabbix-agent-psk
+    owner: zabbix
+    group: zabbix
+    mode: '0400'
+  notify: "Restart Zabbix service"
 
 - name: Configure Zabbix Agent 2
-  template:
+  ansible.builtin.template:
     src: zabbix_agent2.conf.j2
     dest: /etc/zabbix/zabbix_agent2.conf
     owner: zabbix
     group: zabbix
-    mode: 0660
-  notify: Restart and enable Zabbix Agent 2 service
+    mode: '0644'
+  notify: "Restart Zabbix service"
 
 - name: Add Zabbix user to Docker group
-  user:
+  ansible.builtin.user:
     name: zabbix
     groups: docker
   ignore_errors: true
+
+- name: Internal Service Restart
+  ansible.builtin.systemd:
+    name: zabbix-agent2
+    state: restarted
+    enabled: yes
+  listen: "Restart Zabbix service"
+  when: false # This prevents it from running unless notified
