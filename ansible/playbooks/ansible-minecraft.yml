@@ -12,6 +12,7 @@
     - roles/fix-iptables
     - roles/install-minecraft-server-backups
     - roles/atm10-config
+    - roles/install-zabbix-agent2
   vars:
     mcrcon_password: !vault |
           $ANSIBLE_VAULT;1.1;AES256
