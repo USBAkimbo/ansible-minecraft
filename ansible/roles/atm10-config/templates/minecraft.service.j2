@@ -3,17 +3,28 @@ Description=Minecraft ATM10
 After=network.target
 
 [Service]
+# User and Environment
 User=minecraft
+WorkingDirectory=/opt/minecraft/atm10
 Nice=1
+
+# Execution
+ExecStart=/opt/minecraft/atm10/startserver.sh
+ExecStop=/opt/minecraft/mcrcon -H 127.0.0.1 -P 25575 -p {{ mcrcon_password }} stop
+
+# Restart Logic
+Restart=on-failure
+RestartSec=5s
+
+# Exit Handling
 KillMode=none
 SuccessExitStatus=0 1
+
+# Security Hardening
 ProtectHome=true
 ProtectSystem=full
 PrivateDevices=true
 NoNewPrivileges=true
-WorkingDirectory=/opt/minecraft/atm10
-ExecStart=/opt/minecraft/atm10/startserver.sh
-ExecStop=/opt/minecraft/mcrcon -H 127.0.0.1 -P 25575 -p {{ mcrcon_password }} stop
 
 [Install]
 WantedBy=multi-user.target
