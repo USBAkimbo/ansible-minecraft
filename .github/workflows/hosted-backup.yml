@@ -14,23 +14,25 @@ jobs:
           curl -s https://kopia.io/signing-key | sudo gpg --dearmor -o /usr/share/keyrings/kopia-keyring.gpg
           echo "deb [signed-by=/usr/share/keyrings/kopia-keyring.gpg] http://packages.kopia.io/apt/ stable main" | sudo tee /etc/apt/sources.list.d/kopia.list
           sudo apt update
-          sudo apt install -y sshfs kopia
+          sudo apt install -y kopia rsync sshpass
 
-      - name: Mount SFTP
-        env:
-          SFTP_PASSWORD: ${{ secrets.SFTP_PASSWORD }}
+      - name: Check Runner Disk Space
         run: |
-          mkdir -p ~/mc_mnt
-          echo "$SFTP_PASSWORD" | sshfs ${{ secrets.SFTP_USER }}@${{ secrets.SFTP_HOST }}:/ ~/mc_mnt -p ${{ secrets.SFTP_PORT }} -o password_stdin,StrictHostKeyChecking=no,reconnect,ServerAliveInterval=15
+          echo "### Disk Usage Before Sync"
+          df -h
+
+      - name: Sync Files Locally via Rsync
+        env:
+          SSHPASS: ${{ secrets.SFTP_PASSWORD }}
+        run: |
+          mkdir -p ~/mc_local
+          sshpass -e rsync -vazP -e "ssh -p ${{ secrets.SFTP_PORT }} -o StrictHostKeyChecking=no" \
+          ${{ secrets.SFTP_USER }}@${{ secrets.SFTP_HOST }}:/ ~/mc_local/
 
       - name: Kopia Snapshot and Maintenance
         run: |
           kopia repository connect b2 -p="${{ secrets.KOPIA_PASSWORD }}" --bucket="${{ secrets.B2_BUCKET }}" --key-id="${{ secrets.B2_KEY_ID }}" --key="${{ secrets.B2_KEY }}"
           kopia policy set --global --compression=zstd --keep-hourly=24 --keep-daily=7 --keep-weekly=4 --keep-monthly=12 --keep-annual=3 --keep-latest=0
-          kopia snapshot create ~/mc_mnt
+          kopia snapshot create ~/mc_local
           kopia maintenance set --owner=me
           kopia maintenance run --full
-
-      - name: Cleanup
-        if: always()
-        run: fusermount -u ~/mc_mnt
