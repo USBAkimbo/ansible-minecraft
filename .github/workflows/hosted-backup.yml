@@ -1,0 +1,38 @@
+name: Hourly Minecraft Backup (Runner Optimized)
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 * * * *' # Every hour
+
+jobs:
+  backup:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Install Dependencies
+        run: |
+          curl -s https://kopia.io/signing-key | sudo gpg --dearmor -o /usr/share/keyrings/kopia-keyring.gpg
+          echo "deb [signed-by=/usr/share/keyrings/kopia-keyring.gpg] http://packages.kopia.io/apt/ stable main" | sudo tee /etc/apt/sources.list.d/kopia.list
+          sudo apt update
+          sudo apt install -y sshfs kopia
+
+      - name: Mount SFTP
+        env:
+          SFTP_PASSWORD: ${{ secrets.SFTP_PASSWORD }}
+        run: |
+          mkdir -p ~/mc_mnt
+          # Use 'allow_other' and 'reconnect' for better stability on the runner
+          echo "$SFTP_PASSWORD" | sshfs ${{ secrets.SFTP_USER }}@${{ secrets.SFTP_HOST }}:/ ~/mc_mnt -o password_stdin,StrictHostKeyChecking=no,reconnect,ServerAliveInterval=15
+
+      - name: Kopia Snapshot
+        run: |
+          kopia repository connect b2 -p="${{ secrets.KOPIA_PASSWORD }}" --bucket="${{ secrets.B2_BUCKET }}" --key-id="${{ secrets.B2_KEY_ID }}" --key="${{ secrets.B2_KEY }}"
+          kopia policy set --global --compression=zstd --keep-hourly=24 --keep-daily=7 --keep-weekly=4 --keep-monthly=12 --keep-annual=3 --keep-latest=0
+          kopia snapshot create ~/mc_mnt
+
+      - name: Unmount and Cleanup
+        if: always()
+        run: |
+          fusermount -u ~/mc_mnt
+          # Optional: Clear kopia cache to ensure no data persists in logs/temp
+          rm -rf ~/.cache/kopia
