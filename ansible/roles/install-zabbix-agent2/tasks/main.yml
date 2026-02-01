@@ -27,7 +27,6 @@
     owner: zabbix
     group: zabbix
     mode: '0400'
-  notify: "Restart Zabbix service"
 
 - name: Configure Zabbix Agent 2
   ansible.builtin.template:
@@ -36,7 +35,7 @@
     owner: zabbix
     group: zabbix
     mode: '0644'
-  notify: "Restart Zabbix service"
+  register: zabbix_config
 
 - name: Add Zabbix user to Docker group
   ansible.builtin.user:
@@ -44,10 +43,9 @@
     groups: docker
   ignore_errors: true
 
-- name: Internal Service Restart
+- name: Restart Zabbix agent service
   ansible.builtin.systemd:
     name: zabbix-agent2
     state: restarted
     enabled: yes
-  listen: "Restart Zabbix service"
-  when: false # This prevents it from running unless notified
+  when: zabbix_config.changed
