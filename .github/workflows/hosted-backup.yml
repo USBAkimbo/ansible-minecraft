@@ -1,4 +1,4 @@
-name: Hourly Minecraft Backup (Runner Optimized)
+name: Hourly Minecraft Backup
 
 on:
   workflow_dispatch:
@@ -21,18 +21,16 @@ jobs:
           SFTP_PASSWORD: ${{ secrets.SFTP_PASSWORD }}
         run: |
           mkdir -p ~/mc_mnt
-          # Use 'allow_other' and 'reconnect' for better stability on the runner
-          echo "$SFTP_PASSWORD" | sshfs ${{ secrets.SFTP_USER }}@${{ secrets.SFTP_HOST }}:/ ~/mc_mnt -o password_stdin,StrictHostKeyChecking=no,reconnect,ServerAliveInterval=15
+          echo "$SFTP_PASSWORD" | sshfs ${{ secrets.SFTP_USER }}@${{ secrets.SFTP_HOST }}:/ ~/mc_mnt -p ${{ secrets.SFTP_PORT }} -o password_stdin,StrictHostKeyChecking=no,reconnect,ServerAliveInterval=15
 
-      - name: Kopia Snapshot
+      - name: Kopia Snapshot and Maintenance
         run: |
           kopia repository connect b2 -p="${{ secrets.KOPIA_PASSWORD }}" --bucket="${{ secrets.B2_BUCKET }}" --key-id="${{ secrets.B2_KEY_ID }}" --key="${{ secrets.B2_KEY }}"
           kopia policy set --global --compression=zstd --keep-hourly=24 --keep-daily=7 --keep-weekly=4 --keep-monthly=12 --keep-annual=3 --keep-latest=0
           kopia snapshot create ~/mc_mnt
+          kopia maintenance set --owner=me
+          kopia maintenance run --full
 
-      - name: Unmount and Cleanup
+      - name: Cleanup
         if: always()
-        run: |
-          fusermount -u ~/mc_mnt
-          # Optional: Clear kopia cache to ensure no data persists in logs/temp
-          rm -rf ~/.cache/kopia
+        run: fusermount -u ~/mc_mnt
