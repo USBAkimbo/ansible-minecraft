@@ -14,25 +14,28 @@ jobs:
           curl -s https://kopia.io/signing-key | sudo gpg --dearmor -o /usr/share/keyrings/kopia-keyring.gpg
           echo "deb [signed-by=/usr/share/keyrings/kopia-keyring.gpg] http://packages.kopia.io/apt/ stable main" | sudo tee /etc/apt/sources.list.d/kopia.list
           sudo apt update
-          sudo apt install -y kopia rsync sshpass
+          sudo apt install -y kopia rclone
 
-      - name: Check Runner Disk Space
-        run: |
-          echo "### Disk Usage Before Sync"
-          df -h
-
-      - name: Sync Files Locally via Rsync
+      - name: rclone sync SFTP to local disk
         env:
-          SSHPASS: ${{ secrets.SFTP_PASSWORD }}
+          RCLONE_CONFIG_MCHOST_TYPE: sftp
+          RCLONE_CONFIG_MCHOST_HOST: ${{ secrets.SFTP_HOST }}
+          RCLONE_CONFIG_MCHOST_PORT: ${{ secrets.SFTP_PORT }}
+          RCLONE_CONFIG_MCHOST_USER: ${{ secrets.SFTP_USER }}
+          RCLONE_CONFIG_MCHOST_PASS: ${{ secrets.SFTP_PASSWORD }}
         run: |
+          # Create a dummy config and sync
+          # Note: We use 'rclone sync' to pull files to the runner
+          # obfuscate password for rclone
+          RCLONE_PASS=$(rclone obscure ${{ secrets.SFTP_PASSWORD }})
           mkdir -p ~/mc_local
-          sshpass -e rsync -vazP -e "ssh -p ${{ secrets.SFTP_PORT }} -o StrictHostKeyChecking=no" \
-          ${{ secrets.SFTP_USER }}@${{ secrets.SFTP_HOST }}:/ ~/mc_local/
+          rclone sync :sftp,host="${{ secrets.SFTP_HOST }}",user="${{ secrets.SFTP_USER }}",port="${{ secrets.SFTP_PORT }}",pass="$RCLONE_PASS":/ ~/mc_local -v
 
-      - name: Kopia Snapshot and Maintenance
+      - name: Kopia Snapshot
         run: |
           kopia repository connect b2 -p="${{ secrets.KOPIA_PASSWORD }}" --bucket="${{ secrets.B2_BUCKET }}" --key-id="${{ secrets.B2_KEY_ID }}" --key="${{ secrets.B2_KEY }}"
           kopia policy set --global --compression=zstd --keep-hourly=24 --keep-daily=7 --keep-weekly=4 --keep-monthly=12 --keep-annual=3 --keep-latest=0
           kopia snapshot create ~/mc_local
           kopia maintenance set --owner=me
           kopia maintenance run --full
+          rm -rf ~/mc_local
