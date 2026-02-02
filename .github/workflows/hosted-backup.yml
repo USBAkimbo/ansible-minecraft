@@ -2,8 +2,8 @@ name: Hourly Minecraft Backup
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '0 * * * *' # Every hour
+  #schedule:
+  #  - cron: '0 * * * *' # Every hour
 
 jobs:
   backup:
